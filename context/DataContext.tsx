@@ -2,6 +2,17 @@ import React, { createContext, useState, useContext, ReactNode, useMemo, PropsWi
 import { Patient, SosPatient, Appointment, User, LeaveApplication, UserRole, AuditLog, Medicine, Bill, Ward } from '../types';
 import { mockPatients as initialPatients, mockSosPatients as initialSosPatients, mockAppointments as initialAppointments, mockStaff as initialStaff, mockLeaveApplications as initialLeaveApplications, mockAuditLogs as initialAuditLogs, mockMedicines as initialMedicines, mockWards as initialWards } from '../data';
 
+// Helper to get data from localStorage or use initial mock data
+const getInitialState = <T,>(key: string, initialData: T): T => {
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : initialData;
+    } catch (error) {
+        console.error(`Error reading from localStorage for key "${key}":`, error);
+        return initialData;
+    }
+};
+
 interface DataContextType {
   patients: Patient[];
   sosPatients: SosPatient[];
@@ -43,26 +54,31 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: PropsWithChildren) => {
-  const [patients, setPatients] = useState<Patient[]>(initialPatients);
-  const [sosPatients, setSosPatients] = useState<SosPatient[]>(initialSosPatients);
-  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
-  const [staff, setStaff] = useState<User[]>(() => {
-    const savedStaff = localStorage.getItem('hms-staff');
-    return savedStaff ? JSON.parse(savedStaff) : initialStaff;
-  });
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(initialLeaveApplications);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
-  const [medicines, setMedicines] = useState<Medicine[]>(initialMedicines);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [recycledStaff, setRecycledStaff] = useState<User[]>([]);
-  const [recycledMedicines, setRecycledMedicines] = useState<Medicine[]>([]);
-  const [wards, setWards] = useState<Ward[]>(initialWards);
+  const [patients, setPatients] = useState<Patient[]>(() => getInitialState('hms-patients', initialPatients));
+  const [sosPatients, setSosPatients] = useState<SosPatient[]>(() => getInitialState('hms-sosPatients', initialSosPatients));
+  const [appointments, setAppointments] = useState<Appointment[]>(() => getInitialState('hms-appointments', initialAppointments));
+  const [staff, setStaff] = useState<User[]>(() => getInitialState('hms-staff', initialStaff));
+  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(() => getInitialState('hms-leaveApplications', initialLeaveApplications));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getInitialState('hms-auditLogs', initialAuditLogs));
+  const [medicines, setMedicines] = useState<Medicine[]>(() => getInitialState('hms-medicines', initialMedicines));
+  const [bills, setBills] = useState<Bill[]>(() => getInitialState('hms-bills', []));
+  const [recycledStaff, setRecycledStaff] = useState<User[]>(() => getInitialState('hms-recycledStaff', []));
+  const [recycledMedicines, setRecycledMedicines] = useState<Medicine[]>(() => getInitialState('hms-recycledMedicines', []));
+  const [wards, setWards] = useState<Ward[]>(() => getInitialState('hms-wards', initialWards));
 
-
-  useEffect(() => {
-    localStorage.setItem('hms-staff', JSON.stringify(staff));
-  }, [staff]);
-
+  // Effects to sync state with localStorage
+  useEffect(() => { localStorage.setItem('hms-patients', JSON.stringify(patients)); }, [patients]);
+  useEffect(() => { localStorage.setItem('hms-sosPatients', JSON.stringify(sosPatients)); }, [sosPatients]);
+  useEffect(() => { localStorage.setItem('hms-appointments', JSON.stringify(appointments)); }, [appointments]);
+  useEffect(() => { localStorage.setItem('hms-staff', JSON.stringify(staff)); }, [staff]);
+  useEffect(() => { localStorage.setItem('hms-leaveApplications', JSON.stringify(leaveApplications)); }, [leaveApplications]);
+  useEffect(() => { localStorage.setItem('hms-auditLogs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem('hms-medicines', JSON.stringify(medicines)); }, [medicines]);
+  useEffect(() => { localStorage.setItem('hms-bills', JSON.stringify(bills)); }, [bills]);
+  useEffect(() => { localStorage.setItem('hms-recycledStaff', JSON.stringify(recycledStaff)); }, [recycledStaff]);
+  useEffect(() => { localStorage.setItem('hms-recycledMedicines', JSON.stringify(recycledMedicines)); }, [recycledMedicines]);
+  useEffect(() => { localStorage.setItem('hms-wards', JSON.stringify(wards)); }, [wards]);
+  
   const doctors = useMemo(() => staff.filter(s => s.role === UserRole.DOCTOR), [staff]);
 
   const updatePatient = (updatedPatient: Patient) => {
